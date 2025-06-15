@@ -8,22 +8,17 @@ import Link from "next/link";
 
 export default function LoginPage() {
   const router = useRouter();
-  const [user, setUser] = useState({
-    email: "",
-    password: "",
-  });
+  const [user, setUser] = useState({ email: "", password: "" });
   const [buttonDisabled, setButtonDisabled] = useState(true);
   const [loading, setLoading] = useState(false);
 
   const onLogin = async () => {
     try {
       setLoading(true);
-      const response = await axios.post("/api/users/login", user);
-      console.log("Login success:", response.data);
+      await axios.post("/api/users/login", user);
       toast.success("Logged in successfully!");
       router.push("/dashboard");
     } catch (error) {
-      console.error("Login failed:", error);
       toast.error("Invalid credentials");
     } finally {
       setLoading(false);
@@ -31,48 +26,49 @@ export default function LoginPage() {
   };
 
   useEffect(() => {
-    const isValid = user.email.trim().length > 0 && user.password.trim().length > 0;
+    const isValid = user.email.trim() && user.password.trim();
     setButtonDisabled(!isValid);
   }, [user]);
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-white dark:bg-black text-black dark:text-white px-4">
-      <div className="w-full max-w-md space-y-6 bg-gray-100 dark:bg-[#1a1a1a] rounded-xl p-8 shadow-lg">
-        <h1 className="text-3xl font-bold text-center">
-          {loading ? "Logging in..." : "Login to CodeNgo"}
+    <div className="min-h-screen w-full bg-black flex items-center justify-center px-4">
+      <div className="w-full max-w-xl md:w-[600px] p-10 rounded-2xl backdrop-blur-md bg-white/5 border border-white/20 shadow-2xl text-white">
+        <h1 className="text-4xl font-semibold text-center mb-10">
+          {loading ? "Logging in..." : "Log in"}
         </h1>
 
-        <div className="space-y-4">
+        <div className="space-y-6">
           <input
             type="email"
-            placeholder="Email"
+            placeholder="Email ID"
             value={user.email}
             onChange={(e) => setUser({ ...user, email: e.target.value })}
-            className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-[#121212] focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full bg-transparent border-b border-white/30 text-white placeholder-white/60 text-sm focus:outline-none focus:border-white py-2"
           />
           <input
             type="password"
             placeholder="Password"
             value={user.password}
             onChange={(e) => setUser({ ...user, password: e.target.value })}
-            className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-[#121212] focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full bg-transparent border-b border-white/30 text-white placeholder-white/60 text-sm focus:outline-none focus:border-white py-2"
           />
+
           <button
             onClick={onLogin}
             disabled={buttonDisabled}
-            className={`w-full py-3 rounded-lg text-white font-semibold transition ${
+            className={`w-full py-3 mt-6 rounded-full text-md font-medium transition duration-300 ${
               buttonDisabled
-                ? "bg-gray-400 cursor-not-allowed"
-                : "bg-blue-600 hover:bg-blue-700"
+                ? "bg-white/20 text-white/50 cursor-not-allowed"
+                : "bg-white text-black hover:scale-105"
             }`}
           >
             Login
           </button>
         </div>
 
-        <p className="text-sm text-center text-gray-600 dark:text-gray-400">
+        <p className="text-sm text-center mt-8 text-white/50">
           Don’t have an account?{" "}
-          <Link href="/signup" className="text-blue-600 dark:text-blue-400 font-medium hover:underline">
+          <Link href="/signup" className="underline hover:text-white">
             Sign up
           </Link>
         </p>
