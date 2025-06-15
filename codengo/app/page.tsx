@@ -1,102 +1,55 @@
-import Image from "next/image";
+"use client";
+
+import { useEffect } from "react";
+import Link from "next/link";
+import { FaArrowDown } from "react-icons/fa";
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+  useEffect(() => {
+    document.documentElement.style.scrollBehavior = "smooth";
+  }, []);
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://youtu.be/dQw4w9WgXcQ?si=5Gxaxj_DtR5dzbHw  p"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Harsh nudes
-          </a>
+  return (
+    <div className="min-h-screen w-full font-sans bg-white dark:bg-black text-black dark:text-white">
+      {/* HERO SECTION */}
+      <section className="h-screen flex flex-col items-center justify-center px-4 text-center relative">
+        <h1 className="text-5xl sm:text-6xl font-bold mb-6">Welcome to CodeNgo 🚀</h1>
+        <p className="text-lg sm:text-xl text-gray-600 dark:text-gray-400 max-w-xl">
+          Your collaborative coding platform. Code smarter, together.
+        </p>
+
+        {/* Button to navigate to login route */}
+        <Link
+          href="/login"
+          className="mt-10 px-6 py-3 bg-black dark:bg-white text-white dark:text-black rounded-full text-lg font-semibold hover:scale-105 transition-transform duration-300"
+        >
+          Get Started
+        </Link>
+
+        {/* Scroll down button */}
+        <a href="#info" className="absolute bottom-8 animate-bounce text-gray-500 dark:text-gray-400">
+          <FaArrowDown size={24} />
+        </a>
+      </section>
+
+      {/* INFO SECTION (styled like next page) */}
+      <section
+        id="info"
+        className="min-h-screen w-full bg-gray-100 dark:bg-[#1a1a1a] flex items-center justify-center px-4 py-20"
+      >
+        <div className="max-w-3xl text-center">
+          <h2 className="text-4xl sm:text-5xl font-bold mb-6">Why CodeNgo?</h2>
+          <p className="text-lg sm:text-xl text-gray-700 dark:text-gray-300 leading-relaxed">
+            CodeNgo is a powerful collaborative coding platform designed for developers who want to work together
+            efficiently. Share code in real-time, run snippets, and build projects with your team—whether you're sitting
+            together or across the globe.
+          </p>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
+      </section>
+
+      {/* FOOTER */}
+      <footer className="py-6 text-center text-sm text-gray-500 dark:text-gray-400">
+        © {new Date().getFullYear()} CodeNgo. All rights reserved.
       </footer>
     </div>
   );
