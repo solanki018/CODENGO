@@ -5,10 +5,11 @@ import bcryptjs from "bcryptjs";
 import jwt from "jsonwebtoken";
 
 
-connectDB();
 
 export async function POST(request :NextRequest) {
     try{
+        
+        await connectDB();
         const reqBody = await request.json();
         const {email,password} = reqBody;
 
