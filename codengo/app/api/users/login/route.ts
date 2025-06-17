@@ -43,6 +43,9 @@ export async function POST(request :NextRequest) {
             httpOnly: true,
         });
         
+        // ✅ Return the response!
+        return response;
+        
     } catch (error: any) {
         return NextResponse.json({ error: error.message }, { status: 500 });
     }

@@ -1,15 +1,25 @@
-import {connectDB} from "@/app/dbconfig/dbconfig";
-import User from "@/app/models/userModel";
-import { NextRequest,NextResponse } from "next/server";
-import { getDataFromToken } from "@/app/helpers/detDataFromToken";
+import { NextResponse } from "next/server";
+import {connectDB} from "../../../dbconfig/dbconfig"; // your DB connection
+// Update the import path below if your userModel file is not at src/models/userModel.ts
+import User from "../../../models/userModel"; // your Mongoose model
 
-connectDB();
+export async function PUT(req: Request) {
+  await connectDB();
+  const body = await req.json();
 
-export async function POST(request:NextRequest) {
-   const userId  = await getDataFromToken(request);
-    const user = await User.findOne({ _id: userId }).select("-password");
-    return NextResponse.json({
-        message: "User profile fetched successfully",
-        data: user,
-    });
-} 
+  const { email, name, username, phone, about, techStack } = body;
+
+  if (!email) return NextResponse.json({ error: "Email required" }, { status: 400 });
+
+  try {
+    const updatedUser = await User.findOneAndUpdate(
+      { email },
+      { name, username, phone, about, techStack },
+      { new: true }
+    );
+
+    return NextResponse.json({ message: "Profile updated", user: updatedUser });
+  } catch (err) {
+    return NextResponse.json({ error: "Update failed" }, { status: 500 });
+  }
+}
