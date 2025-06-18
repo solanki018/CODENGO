@@ -1,15 +1,20 @@
 'use client';
 
+import MultiFileEditor from '@/app/components/editor';
+import { useRoomContext } from '../RoomContext';
+
 export default function Editor() {
+  const { files, setFiles, activeFile } = useRoomContext();
+
   return (
     <main className="flex-1 p-6 flex flex-col gap-6">
-      <div className="bg-[#1e1e1e] rounded-md px-4 py-2 inline-flex items-center gap-2 w-fit text-sm">
-        <span>react.js</span>
-        <button className="text-gray-400 hover:text-white">×</button>
-      </div>
-
-      <div className="bg-[#2a2a2a] flex-1 rounded-xl p-4 h-[300px]">
-        {/* Code Editor Area */}
+      {/* Editor */}
+      <div className="flex-1 min-h-0 bg-[#2a2a2a] rounded-xl p-0 overflow-hidden">
+        <MultiFileEditor
+          files={files}
+          activeFile={activeFile}
+          onFilesChange={setFiles}
+        />
       </div>
 
       <div className="bg-[#2a2a2a] rounded-xl p-4 h-[200px]">

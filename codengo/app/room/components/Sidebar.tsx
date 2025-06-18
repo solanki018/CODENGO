@@ -1,43 +1,38 @@
 'use client';
 
-import { useState } from 'react';
 import { FaPlus, FaDownload, FaTrash } from 'react-icons/fa';
 import Link from 'next/link';
+import { useRoomContext } from '../RoomContext';
 
 export default function Sidebar() {
-  const [files, setFiles] = useState([
-    { id: 1, name: 'File 1', isEditing: false },
-    { id: 2, name: 'File 2', isEditing: false },
-  ]);
-  const [newFileName, setNewFileName] = useState('');
+  const { files, setFiles, activeFile, setActiveFile } = useRoomContext();
 
   // Add new file with editable name
   const handleNewFile = () => {
-    const nextId = files.length ? files[files.length - 1].id + 1 : 1;
-    setFiles([...files, { id: nextId, name: '', isEditing: true }]);
+    const newName = `file${files.length + 1}.cpp`;
+    setFiles([
+      ...files,
+      { filename: newName, content: '' }
+    ]);
+    setActiveFile(files.length); // Switch to new file
   };
 
   // Rename logic
-  const handleNameChange = (id: number, newName: string) => {
-    setFiles(files.map(file =>
-      file.id === id ? { ...file, name: newName } : file
+  const handleNameChange = (idx: number, newName: string) => {
+    setFiles(files.map((file, i) =>
+      i === idx ? { ...file, filename: newName } : file
     ));
   };
 
-  const handleSaveRename = (id: number) => {
-    setFiles(files.map(file =>
-      file.id === id ? { ...file, isEditing: false } : file
-    ));
-  };
-
-  const handleDoubleClick = (id: number) => {
-    setFiles(files.map(file =>
-      file.id === id ? { ...file, isEditing: true } : file
-    ));
-  };
-
-  const handleDelete = (id: number) => {
-    setFiles(files.filter(file => file.id !== id));
+  // Delete file
+  const handleDelete = (idx: number) => {
+    const newFiles = files.filter((_, i) => i !== idx);
+    setFiles(newFiles);
+    if (activeFile === idx) {
+      setActiveFile(Math.max(0, idx - 1));
+    } else if (activeFile > idx) {
+      setActiveFile(activeFile - 1);
+    }
   };
 
   return (
@@ -54,35 +49,36 @@ export default function Sidebar() {
           <FaPlus /> NEW FILE
         </button>
 
-        {files.map((file) => (
+        {files.map((file, idx) => (
           <div
-            key={file.id}
-            className="w-full bg-[#262626] py-2 px-3 mb-2 rounded-md text-sm text-white flex justify-between items-center hover:bg-[#333]"
+            key={file.filename + idx}
+            className={`w-full bg-[#262626] py-2 px-3 mb-2 rounded-md text-sm flex justify-between items-center hover:bg-[#333] cursor-pointer ${
+              idx === activeFile ? 'border-l-4 border-purple-500' : ''
+            }`}
+            onClick={() => setActiveFile(idx)}
           >
-            {file.isEditing ? (
-              <input
-                autoFocus
-                value={file.name}
-                onChange={(e) => handleNameChange(file.id, e.target.value)}
-                onBlur={() => handleSaveRename(file.id)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') handleSaveRename(file.id);
-                }}
-                className="bg-transparent border-none outline-none w-full text-white placeholder-white/50"
-                placeholder="Enter file name"
-              />
-            ) : (
-              <span
-                className="truncate w-full cursor-pointer"
-                onDoubleClick={() => handleDoubleClick(file.id)}
-                title={file.name}
-              >
-                {file.name || 'Unnamed File'}
-              </span>
-            )}
+            <span
+              className="truncate w-full"
+              title={file.filename}
+              contentEditable
+              suppressContentEditableWarning
+              onBlur={e => handleNameChange(idx, e.currentTarget.textContent || '')}
+              onKeyDown={e => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  (e.target as HTMLElement).blur();
+                }
+              }}
+              spellCheck={false}
+            >
+              {file.filename}
+            </span>
             <FaTrash
               className="text-red-500 hover:text-red-400 cursor-pointer ml-2"
-              onClick={() => handleDelete(file.id)}
+              onClick={e => {
+                e.stopPropagation();
+                handleDelete(idx);
+              }}
             />
           </div>
         ))}

@@ -1,16 +1,19 @@
 // File: app/room/page.tsx
 'use client';
 
+import { RoomProvider } from './RoomContext';
 import Sidebar from './components/Sidebar';
 import Editor from './components/Editor';
 import RightPanel from './components/RightPanel';
 
 export default function RoomPage() {
   return (
-    <div className="flex min-h-screen bg-black text-white">
-      <Sidebar />
-      <Editor />
-      <RightPanel />
-    </div>
+    <RoomProvider>
+      <div className="flex min-h-screen h-screen bg-black text-white overflow-hidden">
+        <Sidebar />
+        <Editor />
+        <RightPanel />
+      </div>
+    </RoomProvider>
   );
 }
