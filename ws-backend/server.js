@@ -1,153 +1,204 @@
-const WebSocket = require('ws');
 const http = require('http');
+const WebSocket = require('ws');
+const ShareDB = require('sharedb');
+const connectMongo = require('sharedb-mongo');
+const WebSocketJSONStream = require('@teamwork/websocket-json-stream');
+const { v4: uuidv4 } = require('uuid');
 const { exec } = require('child_process');
 const path = require('path');
 const fs = require('fs');
-const { v4: uuidv4 } = require('uuid');
+const { configDotenv } = require('dotenv');
+const mongoose = require('mongoose');
+configDotenv();
+
+// MongoDB-backed ShareDB instance
+const db = connectMongo(process.env.MONGO_URI);
+const backend = new ShareDB({ db });
+
+
+mongoose.connect(process.env.MONGO_URI)
+  .then(() => console.log('[MongoDB] Connected successfully'))
+  .catch((err) => console.error('[MongoDB] Connection error:', err));
 
 const server = http.createServer();
 const wss = new WebSocket.Server({ server });
-
 const PORT = 3001;
 
-rooms = {};
+// === ROOM MANAGEMENT ===
+class Room {
+  constructor(roomId) {
+    this.id = roomId;
+    this.clients = new Map(); // userId -> socket
+  }
 
-wss.on('connection', (socket) => {
-    console.log('Client connected');
+  addClient(userId, socket) {
+    this.clients.set(userId, socket);
+  }
 
+  removeClient(userId) {
+    this.clients.delete(userId);
+  }
 
-    socket.on('message', async (message) => {
-        const data = JSON.parse(message);
+  broadcast(message, excludeId = null) {
+    for (const [uid, socket] of this.clients) {
+      if (uid !== excludeId && socket.readyState === WebSocket.OPEN) {
+        socket.send(JSON.stringify(message));
+      }
+    }
+  }
 
-        if (data.type === 'create') {
-            const newRoomId = uuidv4().slice(0, 6); // shorter, shareable ID like "a8f29c"
-            if (!rooms[newRoomId]) {
-                rooms[newRoomId] = new Set();
-            }
-            rooms[newRoomId].add(socket);
-            socket.roomId = newRoomId;
+  hasNoClients() {
+    return this.clients.size === 0;
+  }
+}
 
-            console.log(`New room created: ${newRoomId}`);
+const rooms = new Map(); // roomId -> Room
 
-            // Respond with roomId
-            socket.send(JSON.stringify({
-                type: 'room-created',
-                roomId: newRoomId
-            }));
-            return;
+// === HANDLE CONNECTIONS ===
+wss.on('connection', (ws, req) => {
+  console.log('Client connected');
+  console.log(`Request URL: ${req.url}`);
+  
+
+  if (req.url === '/ot') {
+    console.log('Connecting to ShareDB over WebSocket');
+    const stream = new WebSocketJSONStream(ws);
+    backend.listen(stream);
+    return;
+  }
+
+  ws.on('message', async (msg) => {
+    // console.log(`Received message: ${msg}`);
+    const data = JSON.parse(msg);
+
+    const { type, roomId, userId } = data;
+
+    if (type === 'create') {
+      assertUserId(data, ws);
+
+      const newRoomId = uuidv4().slice(0, 6);
+      const room = new Room(newRoomId);
+      room.addClient(userId, ws);
+      rooms.set(newRoomId, room);
+
+      ws.roomId = newRoomId;
+      ws.userId = userId;
+
+      // Create OT document
+      const conn = backend.connect();
+      const doc = conn.get('files', newRoomId);
+      doc.fetch((err) => {
+        if (err) throw err;
+        if (!doc.type) {
+          doc.create({ content: '' });
         }
+      });
 
-        // when joining room
-        if (data.type === 'join') {
-            const roomId = data.roomId;
-            if (!roomId) return;
+      // console all members of room
+      console.log(`Room ${newRoomId} created by user ${userId}`);
+      console.log(`Members: ${Array.from(room.clients.keys()).join(', ')}`);
 
-            // Leave previous room if any
-            if (socket.roomId && rooms[socket.roomId]) {
-                rooms[socket.roomId].delete(socket);
-            }
-
-            // Add to new room
-            if (!rooms[roomId]) rooms[roomId] = new Set();
-            rooms[roomId].add(socket);
-            socket.roomId = roomId;
-
-            console.log(`Client joined room: ${roomId}`);
-            socket.send(JSON.stringify({ type: 'joined', roomId }));
-        }
-
-        // Client sends code or content
-        if (data.type === 'edit' && socket.roomId) {
-            const roomId = socket.roomId;
-
-            // Broadcast to other users in same room
-            rooms[roomId].forEach((client) => {
-                if (client !== socket && client.readyState === WebSocket.OPEN) {
-                    client.send(JSON.stringify({
-                        type: 'update',
-                        content: data.content,
-                        sender: data.sender || null
-                    }));
-                }
-            });
-        }
-
-        if (data.type === 'run') {
-            const { language, code } = data;
-            const roomId = socket.roomId;
-
-            if (!roomId) {
-                socket.send(JSON.stringify({ type: 'result', output: 'Not in a room' }));
-                return;
-            }
-
-            const output = await runCodeInDocker(language, code, roomId);
-
-            // Broadcast result to the entire room
-            rooms[roomId].forEach((client) => {
-                if (client.readyState === WebSocket.OPEN) {
-                    client.send(JSON.stringify({
-                        type: 'result',
-                        output,
-                    }));
-                }
-            });
-        }
-
-    });
-
-    socket.on('close', () => {
-        const roomId = socket.roomId;
-        if (roomId && rooms[roomId]) {
-            rooms[roomId].delete(socket);
-            if (rooms[roomId].size === 0) {
-                delete rooms[roomId];
-            }
-            console.log(`Client left room: ${roomId}`);
-        }
-    });
-});
-
-async function runCodeInDocker(language, code, roomId) {
-    const supported = {
-        cpp: { filename: 'main.cpp', image: 'gcc:latest', compile: true },
-        python: { filename: 'script.py', image: 'python:3.10', compile: false }
-    };
-
-    if (!supported[language]) return 'Unsupported language';
-
-    const { filename, image, compile } = supported[language];
-    const roomDir = path.join(__dirname, 'tmp', roomId);
-
-    // Ensure room directory exists
-    fs.mkdirSync(roomDir, { recursive: true });
-
-    // Write code to a room-specific file
-    const filePath = path.join(roomDir, filename);
-    fs.writeFileSync(filePath, code);
-
-    let dockerCommand;
-
-    if (compile) {
-        // C++
-        dockerCommand = `docker run --rm -v ${roomDir}:/code ${image} sh -c "g++ /code/${filename} -o /code/a.out && /code/a.out"`;
-    } else {
-        // Python
-        dockerCommand = `docker run --rm -v ${roomDir}:/code ${image} python /code/${filename}`;
+      ws.send(JSON.stringify({ type: 'room-created', roomId: newRoomId }));
     }
 
-    return new Promise((resolve) => {
-        exec(dockerCommand, (error, stdout, stderr) => {
-            if (error) {
-                resolve(`Error: ${stderr || error.message}`);
-            } else {
-                resolve(stdout);
-            }
-        });
-    });
+    if (type === 'join') {
+
+      assertUserId(data, ws);
+      assertRoomExists(roomId, ws);
+
+      const room = rooms.get(roomId);
+      room.addClient(userId, ws);
+      ws.roomId = roomId;
+      ws.userId = userId;
+
+      console.log(`Members: ${Array.from(room.clients.keys()).join(', ')}`);
+
+      ws.send(JSON.stringify({ type: 'joined', roomId }));
+    }
+
+    if (type === 'run') {
+
+      assertRoomExists(roomId, ws);
+      const output = await runCodeInDocker(data.language, data.code, roomId);
+      const room = rooms.get(roomId);
+      if (room) {
+        room.broadcast({ type: 'result', output });
+      }
+    }
+  });
+
+  ws.on('close', () => {
+    const roomId = ws.roomId;
+    const userId = ws.userId;
+
+    if (roomId && rooms.has(roomId)) {
+      const room = rooms.get(roomId);
+      room.removeClient(userId);
+      if (room.hasNoClients()) {
+        rooms.delete(roomId);
+        console.log(`Room ${roomId} deleted (no users left)`);
+      }
+    }
+  });
+
+  // // Connect ShareDB stream
+  // const stream = new WebSocketJSONStream(ws);
+  // backend.listen(stream);
+});
+
+function sendError(ws, message) {
+  ws.send(JSON.stringify({
+    type: 'error',
+    message
+  }));
+}
+
+function assertUserId(data, ws) {
+  if (!data.userId) {
+    sendError(ws, 'userId is required for this action.');
+    throw new Error('Missing userId');
+  }
+}
+
+function assertRoomExists(roomId, ws) {
+  if (!roomId || !rooms.has(roomId)) {
+    sendError(ws, `Room '${roomId}' does not exist.`);
+    throw new Error(`Room not found: ${roomId}`);
+  }
 }
 
 
+// === DOCKER CODE EXECUTION ===
+async function runCodeInDocker(language, code, roomId) {
+  const supported = {
+    cpp: { filename: 'main.cpp', image: 'gcc:latest', compile: true },
+    python: { filename: 'script.py', image: 'python:3.10', compile: false }
+  };
+
+  if (!supported[language]) return 'Unsupported language';
+
+  const { filename, image, compile } = supported[language];
+  const roomDir = path.join(__dirname, 'tmp', roomId);
+  fs.mkdirSync(roomDir, { recursive: true });
+
+  const filePath = path.join(roomDir, filename);
+  fs.writeFileSync(filePath, code);
+
+  let dockerCommand;
+  if (compile) {
+    dockerCommand = `docker run --rm -v ${roomDir}:/code ${image} sh -c "g++ /code/${filename} -o /code/a.out && /code/a.out"`;
+  } else {
+    dockerCommand = `docker run --rm -v ${roomDir}:/code ${image} python /code/${filename}`;
+  }
+
+  return new Promise((resolve) => {
+    exec(dockerCommand, (err, stdout, stderr) => {
+      if (err) resolve(`Error: ${stderr || err.message}`);
+      else resolve(stdout);
+    });
+  });
+}
+
 server.listen(PORT, () => {
-    console.log(`WebSocket server listening on ws://localhost:${PORT}`);
+  console.log(`WebSocket server listening on ws://localhost:${PORT}`);
 });
