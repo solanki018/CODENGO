@@ -28,7 +28,7 @@ export default function CollaborativeEditor({ filename }: { filename: string }) 
         yText,
         editorRef.getModel() as editor.ITextModel,
         new Set([editorRef]),
-        yProvider.awareness as Awareness
+        yProvider.awareness as unknown as Awareness
       );
     }
 
