@@ -1,6 +1,17 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSelf } from "@liveblocks/react/suspense";
-import { AwarenessList, UserAwareness } from "@/liveblocks.config";
+// Update the import path below to the correct relative path if needed
+// Define AwarenessList and UserAwareness types here if the module is missing
+type UserAwareness = {
+  user: {
+    name: string;
+    color?: string;
+    [key: string]: any;
+  };
+  [key: string]: any;
+};
+
+type AwarenessList = [number, UserAwareness][];
 import { LiveblocksYjsProvider } from "@liveblocks/yjs";
 
 type Props = {
