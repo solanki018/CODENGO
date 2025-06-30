@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
   return new Response(body, { status });
 
   // now onto Room.tsx for roomId
-}k
+}
 
 const USER_INFO = [
   {

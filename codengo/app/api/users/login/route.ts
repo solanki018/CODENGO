@@ -8,7 +8,6 @@ import jwt from "jsonwebtoken";
 
 export async function POST(request :NextRequest) {
     try{
-        
         await connectDB();
         const reqBody = await request.json();
         const {email,password} = reqBody;
@@ -19,7 +18,7 @@ export async function POST(request :NextRequest) {
         const user = await User.findOne({ email });
 
         if (!user) {
-            return NextResponse.json({ error: "User not found" }, { status: 500 });
+            return NextResponse.json({ error: "User not found" }, { status: 501 });
         }
         console.log("user exists");
 
@@ -47,6 +46,6 @@ export async function POST(request :NextRequest) {
         return response;
         
     } catch (error: any) {
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        return NextResponse.json({ error: error.message }, { status: 520 });
     }
 }
