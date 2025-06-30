@@ -2,41 +2,23 @@
 
 import { FaPlus, FaDownload, FaTrash } from 'react-icons/fa';
 import Link from 'next/link';
-import { useRoomContext } from '../RoomContext';
+import { useRoomFiles } from '../RoomContext';
 
 export default function Sidebar() {
-  const { files, setFiles, activeFile, setActiveFile } = useRoomContext();
+  const { files, activeFile, setActiveFile, addFile, deleteFile } = useRoomFiles();
 
-  // Add new file with editable name
   const handleNewFile = () => {
     const newName = `file${files.length + 1}.cpp`;
-    setFiles([
-      ...files,
-      { filename: newName, content: '' }
-    ]);
-    setActiveFile(files.length); // Switch to new file
+    addFile(newName);
   };
 
-  // Rename logic
-  const handleNameChange = (idx: number, newName: string) => {
-    setFiles(files.map((file, i) =>
-      i === idx ? { ...file, filename: newName } : file
-    ));
-  };
-
-  // Delete file
   const handleDelete = (idx: number) => {
-    const newFiles = files.filter((_, i) => i !== idx);
-    setFiles(newFiles);
-    if (activeFile === idx) {
-      setActiveFile(Math.max(0, idx - 1));
-    } else if (activeFile > idx) {
-      setActiveFile(activeFile - 1);
-    }
+    const filename = files[idx].filename;
+    deleteFile(filename);
   };
 
   return (
-    <aside className="w-64 bg-[#1a1a1a] p-4 flex flex-col justify-between min-h-screen">
+    <aside className="w-64 bg-[#1a1a1a] p-4 flex flex-col justify-between min-h-screen rounded-2xl">
       <div>
         <h1 className="text-3xl font-bold text-white mb-8">
           CoDe<span className="text-purple-500">N</span>go
@@ -57,25 +39,12 @@ export default function Sidebar() {
             }`}
             onClick={() => setActiveFile(idx)}
           >
-            <span
-              className="truncate w-full"
-              title={file.filename}
-              contentEditable
-              suppressContentEditableWarning
-              onBlur={e => handleNameChange(idx, e.currentTarget.textContent || '')}
-              onKeyDown={e => {
-                if (e.key === 'Enter') {
-                  e.preventDefault();
-                  (e.target as HTMLElement).blur();
-                }
-              }}
-              spellCheck={false}
-            >
+            <span className="truncate w-full" title={file.filename}>
               {file.filename}
             </span>
             <FaTrash
               className="text-red-500 hover:text-red-400 cursor-pointer ml-2"
-              onClick={e => {
+              onClick={(e) => {
                 e.stopPropagation();
                 handleDelete(idx);
               }}

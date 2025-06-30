@@ -1,48 +1,73 @@
-import React, { createContext, useContext, useState } from "react";
-import type { Doc } from 'sharedb';
+// RoomFileContext.tsx
+"use client";
 
-type File = {
+import { useStorage, useMutation, useSelf } from "@liveblocks/react";
+import React, { createContext, useContext, useState, ReactNode } from "react";
+import { LiveList } from "@liveblocks/core";
+
+export type FileTab = {
   filename: string;
-  content: string;
-  doc: Doc;
 };
 
-type RoomContextType = {
-  files: File[];
-  setFiles: React.Dispatch<React.SetStateAction<File[]>>;
+type RoomFileContextType = {
+  files: FileTab[];
   activeFile: number;
   setActiveFile: React.Dispatch<React.SetStateAction<number>>;
-  output: string;
-  setOutput: React.Dispatch<React.SetStateAction<string>>;
-  userId: string;
+  addFile: (filename: string) => void;
+  deleteFile: (filename: string) => void;
 };
 
-const RoomContext = createContext<RoomContextType | undefined>(undefined);
+const RoomFileContext = createContext<RoomFileContextType | undefined>(undefined);
 
-export const useRoomContext = () => {
-  const ctx = useContext(RoomContext);
-  if (!ctx) throw new Error("useRoomContext must be used within RoomProvider");
+export const useRoomFiles = () => {
+  const ctx = useContext(RoomFileContext);
+  if (!ctx) throw new Error("useRoomFiles must be used inside RoomFileProvider");
   return ctx;
 };
 
-export const RoomProvider = ({ children, roomId }: { children: React.ReactNode; roomId: string; }) => {
-  const [files, setFiles] = useState<File[]>([
-    {
-      filename: "hello.py",
-      content: "# Welcome to your collaborative editor!\nprint('Hello, world!')",
-      doc: null as unknown as Doc, // will be replaced when real doc is attached
-    }
-  ]);
-  const [activeFile, setActiveFile] = useState(0);
-  const [output, setOutput] = useState("");
+export const RoomFileProvider = ({ children }: { children: React.ReactNode }) => {
+  // const [files, setFiles] = useState<FileTab[]>([{ filename: "main.cpp" }]);
+  const files = useStorage((root) => root.files as FileTab[] || []);
 
-  const userId = 'hihi';
+
+  const [activeFile, setActiveFile] = useState(0);
+
+  const addFile = useMutation(({ storage }, name: string) => {
+    const list = storage.get("files");
+    console.log("Adding file:", name);
+    if (!(list instanceof LiveList)) {
+      console.error("Files is not a LiveList");
+      return;
+    }
+    console.log("Current files:", list.toArray());
+    if (list && !list.toArray().includes({ filename: name })) {
+      list.push({ filename: name });
+      console.log("File added:", name);
+    }
+  }, []);
+
+  const deleteFile = useMutation(({ storage }, name: string) => {
+    console.log("Deleting file:", name);
+    const list = storage.get("files");
+    console.log("Current files:", list);
+    if (!(list instanceof LiveList)) {
+      console.error("Files is not a LiveList");
+      return;
+    }
+
+    const index = list.findIndex(
+      (item) => item && typeof item === "object" && "filename" in item && item.filename === name
+    );
+    console.log("Index of file to delete:", index);
+    if (index !== -1) {
+      list.delete(index);
+    }
+  }, []);
+
 
   return (
-    <RoomContext.Provider
-      value={{ files, setFiles, activeFile, setActiveFile, output, setOutput, userId }}
-    >
+    <RoomFileContext.Provider value={{ files: files ?? [], activeFile, setActiveFile, addFile, deleteFile }}>
       {children}
-    </RoomContext.Provider>
+    </RoomFileContext.Provider>
   );
 };

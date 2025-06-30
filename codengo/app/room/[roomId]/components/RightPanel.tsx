@@ -52,7 +52,7 @@ export default function RightPanel() {
   const getUser = (id: number) => users.find((u) => u.id === id);
 
   return (
-    <aside className="w-80 h-screen bg-[#1a1a1a] text-white flex flex-col border-l border-[#333]">
+    <aside className="w-80 h-screen bg-[#1a1a1a] text-white flex flex-col border-l rounded-2xl border-[#333]">
       
       {/* Top: Active Users */}
       <div className="p-4 border-b border-[#333]">

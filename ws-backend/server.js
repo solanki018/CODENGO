@@ -29,6 +29,7 @@ class Room {
   constructor(roomId) {
     this.id = roomId;
     this.clients = new Map(); // userId -> socket
+    this.files = ['hello.py']; // default
   }
 
   addClient(userId, socket) {
@@ -45,6 +46,16 @@ class Room {
         socket.send(JSON.stringify(message));
       }
     }
+  }
+
+  addFile(filename) {
+    if (!this.files.includes(filename)) {
+      this.files.push(filename);
+    }
+  }
+
+  removeFile(filename) {
+    this.files = this.files.filter(f => f !== filename);
   }
 
   hasNoClients() {
@@ -72,6 +83,78 @@ wss.on('connection', (ws, req) => {
     const data = JSON.parse(msg);
 
     const { type, roomId, userId } = data;
+
+    if (type === 'list-files') {
+      const roomId = data.roomId;
+      const room = rooms.get(roomId);
+      console.log(room)
+      if (!room) {
+        ws.send(JSON.stringify({ type: 'error', message: 'Room not found' }));
+        return;
+      }
+
+      const files = room.files || ['hello.py']; // fallback
+      console.log(files)
+      ws.send(JSON.stringify({ type: 'file-list', files }));
+    }
+
+    if (type === 'create-file') {
+      const { filename, roomId } = data;
+      const docId = `${roomId}-${filename}`;
+      const doc = backend.connect().get('files', docId);
+      doc.fetch((err) => {
+        if (err) throw err;
+        if (!doc.type) {
+          doc.create({ content: '' });
+        }
+      });
+
+      // Register filename in room state
+      const room = rooms.get(roomId);
+      room.fileSet.add(filename); // <- keep track of known files
+
+      // Broadcast new file to all clients in the room
+      room.broadcast({
+        type: 'new-file',
+        filename,
+      });
+    }
+
+    if (type === 'rename-file') {
+      assertUserId(data, ws);
+      assertRoomExists(roomId);
+
+      const room = rooms.get(roomId);
+      const { oldName, newName } = data;
+
+      if (!room.files.includes(oldName)) {
+        ws.send(JSON.stringify({ type: 'error', message: `File "${oldName}" does not exist` }));
+        return;
+      }
+
+      if (room.files.includes(newName)) {
+        ws.send(JSON.stringify({ type: 'error', message: `File "${newName}" already exists` }));
+        return;
+      }
+
+      // Update the file list
+      const index = room.files.indexOf(oldName);
+      room.files[index] = newName;
+
+      // You might optionally migrate the ShareDB doc
+      // But ShareDB does not support renaming doc IDs directly
+      // So you’d need to copy+delete if necessary
+
+      // Notify the requester
+      ws.send(JSON.stringify({ type: 'file-renamed', oldName, newName }));
+
+      // Broadcast to other users
+      room.broadcastExcept(ws, {
+        type: 'file-renamed',
+        oldName,
+        newName,
+      });
+    }
 
     if (type === 'create') {
       assertUserId(data, ws);
@@ -115,6 +198,7 @@ wss.on('connection', (ws, req) => {
 
       ws.send(JSON.stringify({ type: 'joined', roomId }));
     }
+    
 
     if (type === 'run') {
 
@@ -131,14 +215,14 @@ wss.on('connection', (ws, req) => {
     const roomId = ws.roomId;
     const userId = ws.userId;
 
-    if (roomId && rooms.has(roomId)) {
-      const room = rooms.get(roomId);
-      room.removeClient(userId);
-      if (room.hasNoClients()) {
-        rooms.delete(roomId);
-        console.log(`Room ${roomId} deleted (no users left)`);
-      }
-    }
+    // if (roomId && rooms.has(roomId)) {
+    //   const room = rooms.get(roomId);
+    //   room.removeClient(userId);
+    //   if (room.hasNoClients()) {
+    //     rooms.delete(roomId);
+    //     console.log(`Room ${roomId} deleted (no users left)`);
+    //   }
+    // }
   });
 
   // // Connect ShareDB stream
