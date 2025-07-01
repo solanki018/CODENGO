@@ -18,7 +18,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    // Generate unique 6-character alphanumeric room ID
     const roomId = Math.random().toString(36).substring(2, 8).toUpperCase();
 
     const newRoom = await Room.create({

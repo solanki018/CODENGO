@@ -1,4 +1,3 @@
-// ✅ FILE: app/dashboard/page.tsx
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -9,13 +8,15 @@ import { toast, Toaster } from 'react-hot-toast';
 import Link from 'next/link';
 
 export default function Dashboard() {
-  const [username, setUsername] = useState('Loading...');
+  const [user, setUser] = useState<any>(null);
   const [profilePic, setProfilePic] = useState('/profile.jpg');
   const [showJoinModal, setShowJoinModal] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [roomId, setRoomId] = useState('');
   const [roomName, setRoomName] = useState('');
   const [userId, setUserId] = useState('');
+  const [userRooms, setUserRooms] = useState([]);
+
   const router = useRouter();
 
   useEffect(() => {
@@ -23,26 +24,40 @@ export default function Dashboard() {
       try {
         const res = await axios.get('/api/users/me');
         if (res.data?.user) {
-          setUsername(res.data.user.name || "Anonymous");
-          setUserId(res.data.user._id);
+          const fetchedUser = res.data.user;
+          setUser(fetchedUser);
+          setUserId(fetchedUser._id);
+          fetchUserRooms(fetchedUser._id);
+
+          const pic = fetchedUser.profileImage || localStorage.getItem('profileImage');
+          if (pic) setProfilePic(pic);
         } else {
-          toast.error("User not found");
+          toast.error('User not found');
         }
       } catch (error) {
-        console.error("Error fetching user:", error);
-        toast.error("Failed to fetch user data");
+        console.error('Error fetching user:', error);
+        toast.error('Failed to fetch user data');
       }
     };
-
-    const pic = localStorage.getItem('profileImage');
-    if (pic) setProfilePic(pic);
 
     fetchUser();
   }, []);
 
+  const fetchUserRooms = async (id: string) => {
+    try {
+      const res = await axios.get(`/api/rooms/userRooms?userId=${id}`);
+      if (res.data?.rooms) {
+        setUserRooms(res.data.rooms);
+      }
+    } catch (err) {
+      console.error('Error fetching rooms:', err);
+      toast.error('Could not load rooms');
+    }
+  };
+
   const handleJoinRoom = async () => {
     if (!roomId.trim()) {
-      toast.error("Please enter a Room ID");
+      toast.error('Please enter a Room ID');
       return;
     }
 
@@ -52,27 +67,27 @@ export default function Dashboard() {
         router.push(`/room/${roomId}`);
       }
     } catch (err) {
-      toast.error("Room ID not found");
+      toast.error('Room ID not found');
     }
   };
 
   const handleCreateRoom = async () => {
     if (!userId || !roomName.trim()) {
-      toast.error("Enter room name");
+      toast.error('Enter room name');
       return;
     }
 
     try {
       const res = await axios.post('/api/createRoom', { userId, roomName });
       if (res.status === 200) {
-        toast.success("Room created!");
+        toast.success('Room created!');
         router.push(`/room/${res.data.roomId}`);
       } else {
-        toast.error("Failed to create room");
+        toast.error('Failed to create room');
       }
     } catch (error) {
-      console.error("Error creating room:", error);
-      toast.error("Something went wrong");
+      console.error('Error creating room:', error);
+      toast.error('Something went wrong');
     }
   };
 
@@ -106,19 +121,45 @@ export default function Dashboard() {
 
       {/* Main Content */}
       <main className="flex-1 p-10 overflow-y-auto">
-        {/* You can place your main content here */}
+        <h2 className="text-2xl font-bold mb-6">🧑‍💻 Your Rooms</h2>
+
+        {userRooms.length === 0 ? (
+          <p className="text-gray-400">You haven't created any rooms yet.</p>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+            {userRooms.map((room: any) => (
+              <div
+                key={room._id}
+                className="bg-zinc-800 border border-zinc-600 p-5 rounded-xl hover:bg-zinc-700 cursor-pointer transition"
+                onClick={() => router.push(`/room/${room.roomId}`)}
+              >
+                <h3 className="text-xl font-semibold text-white mb-2">
+                  {room.name}
+                </h3>
+                <p className="text-gray-400 text-sm">Room ID: {room.roomId}</p>
+              </div>
+            ))}
+          </div>
+        )}
       </main>
 
       {/* Right Profile Panel */}
       <aside className="w-72 p-6 border-l border-gray-700 flex flex-col items-center space-y-4">
         <Link href="/profile">
           <div className="relative w-24 h-24 rounded-full overflow-hidden cursor-pointer hover:scale-105 transition-transform">
-            <Image src={profilePic} alt="Profile" fill className="object-cover" />
+            <Image
+              src={profilePic || '/profile.jpg'}
+              alt="Profile"
+              fill
+              className="object-cover"
+            />
           </div>
         </Link>
         <div className="text-center">
-          <h3 className="text-lg font-bold">{username}</h3>
-          <p className="text-sm text-gray-400">@solanki018</p>
+          <h3 className="text-lg font-bold">{user?.name || 'Anonymous'}</h3>
+          <p className="text-sm text-gray-400">
+            @{user?.email?.split('@')[0] || 'user'}
+          </p>
         </div>
       </aside>
 

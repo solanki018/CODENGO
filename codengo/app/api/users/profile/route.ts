@@ -1,5 +1,3 @@
-// app/api/users/profile/route.ts
-
 import { NextRequest, NextResponse } from "next/server";
 import { connectDB } from "@/app/dbconfig/dbconfig";
 import User from "@/app/models/userModel";
@@ -17,21 +15,19 @@ export async function PUT(req: NextRequest) {
     const decoded: any = jwt.verify(token, process.env.TOKEN_SECRET!);
     const body = await req.json();
 
-    // Update only allowed editable fields
     const { name, phone, about, techStack, profileImage } = body;
 
-const updatedUser = await User.findByIdAndUpdate(
-  decoded.id,
-  {
-    ...(name && { name }),
-    ...(phone && { phone }),
-    ...(about && { about }),
-    ...(techStack && { techStack }),
-    ...(profileImage && { profileImage }),
-  },
-  { new: true }
-).select("-password");
-
+    const updatedUser = await User.findByIdAndUpdate(
+      decoded.id,
+      {
+        ...(name && { username: name }), // Mapping name → username in DB
+        ...(phone && { phone }),
+        ...(about && { about }),
+        ...(techStack && { techStack }),
+        ...(profileImage && { profileImage }),
+      },
+      { new: true }
+    ).select("-password");
 
     if (!updatedUser) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });

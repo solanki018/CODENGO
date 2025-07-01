@@ -1,19 +1,20 @@
+// ✅ FILE: app/models/userModel.ts
 import mongoose from 'mongoose';
 
 const userSchema = new mongoose.Schema({
   username: {
     type: String,
     required: [true, 'Username is required'],
-    unique: false, // Set to false to allow duplicate usernames
-  },
-  firstName: {
-    type: String,
-    required: false,
+    unique: false,
   },
   email: {
     type: String,
     required: [true, 'Email is required'],
     unique: true,
+  },
+  password: {
+    type: String,
+    required: false,
   },
   isVerified: {
     type: Boolean,
@@ -36,17 +37,27 @@ const userSchema = new mongoose.Schema({
     default: null,
   },
   profileImage: {
-  type: String, // Base64 string or image URL
-  default: null,
-},
-
-  password: {
     type: String,
-    required: [false, 'Password is required'],  
+    default: null,
   },
-  rooms: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Room' }] // Add this if not present yet
+  phone: {
+    type: String,
+    default: '',
+  },
+  about: {
+    type: String,
+    default: '',
+  },
+  techStack: {
+    type: String,
+    default: '',
+  },
+  rooms: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Room'
+  }]
 });
 
-const User = mongoose.models.users || mongoose.model('users', userSchema);
+const User = mongoose.models.User || mongoose.model('User', userSchema);
 
 export default User;
