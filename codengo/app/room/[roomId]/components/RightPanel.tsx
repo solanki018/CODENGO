@@ -77,7 +77,7 @@ export default function RightPanel() {
       setMessages((prev) => [...prev, msg]);
     });
 
-    socket.on('update-mic', ({ userId, isSpeaking }) => {
+    socket.on('update-mic', ({ userId, isSpeaking }: { userId: string; isSpeaking: boolean }) => {
       setUsers((prev) =>
         prev.map((u) =>
           u.socketId === userId ? { ...u, isSpeaking } : u
@@ -85,7 +85,7 @@ export default function RightPanel() {
       );
     });
 
-    socket.on('offer', async ({ from, offer }) => {
+    socket.on('offer', async ({ from, offer }: { from: string; offer: RTCSessionDescriptionInit }) => {
       const pc = createPeerConnection(from);
       await pc.setRemoteDescription(new RTCSessionDescription(offer));
       const answer = await pc.createAnswer();
@@ -93,11 +93,11 @@ export default function RightPanel() {
       socket.emit('answer', { to: from, answer });
     });
 
-    socket.on('answer', async ({ from, answer }) => {
+    socket.on('answer', async ({ from, answer }: { from: string; answer: RTCSessionDescriptionInit }) => {
       await peerConnections[from]?.setRemoteDescription(new RTCSessionDescription(answer));
     });
 
-    socket.on('ice-candidate', ({ from, candidate }) => {
+    socket.on('ice-candidate', ({ from, candidate }: { from: string; candidate: RTCIceCandidateInit }) => {
       peerConnections[from]?.addIceCandidate(new RTCIceCandidate(candidate));
     });
 
