@@ -1,25 +1,44 @@
-import { NextResponse } from "next/server";
-import {connectDB} from "../../../dbconfig/dbconfig"; // your DB connection
-// Update the import path below if your userModel file is not at src/models/userModel.ts
-import User from "../../../models/userModel"; // your Mongoose model
+// app/api/users/profile/route.ts
 
-export async function PUT(req: Request) {
-  await connectDB();
-  const body = await req.json();
+import { NextRequest, NextResponse } from "next/server";
+import { connectDB } from "@/app/dbconfig/dbconfig";
+import User from "@/app/models/userModel";
+import jwt from "jsonwebtoken";
 
-  const { email, name, username, phone, about, techStack } = body;
-
-  if (!email) return NextResponse.json({ error: "Email required" }, { status: 400 });
-
+export async function PUT(req: NextRequest) {
   try {
-    const updatedUser = await User.findOneAndUpdate(
-      { email },
-      { name, username, phone, about, techStack },
-      { new: true }
-    );
+    await connectDB();
+
+    const token = req.cookies.get("token")?.value;
+    if (!token) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const decoded: any = jwt.verify(token, process.env.TOKEN_SECRET!);
+    const body = await req.json();
+
+    // Update only allowed editable fields
+    const { name, phone, about, techStack, profileImage } = body;
+
+const updatedUser = await User.findByIdAndUpdate(
+  decoded.id,
+  {
+    ...(name && { name }),
+    ...(phone && { phone }),
+    ...(about && { about }),
+    ...(techStack && { techStack }),
+    ...(profileImage && { profileImage }),
+  },
+  { new: true }
+).select("-password");
+
+
+    if (!updatedUser) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
 
     return NextResponse.json({ message: "Profile updated", user: updatedUser });
-  } catch (err) {
-    return NextResponse.json({ error: "Update failed" }, { status: 500 });
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

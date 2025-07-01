@@ -9,21 +9,25 @@ import { editor } from "monaco-editor";
 import { MonacoBinding } from "y-monaco";
 import { Awareness } from "y-protocols/awareness";
 
-// Collaborative text editor with simple rich text, live cursors, and live avatars
-export default function CollaborativeEditor({ filename }: { filename: string }) {
+export default function CollaborativeEditor({
+  filename,
+  getCodeRef,
+}: {
+  filename: string;
+  getCodeRef: React.MutableRefObject<() => string>;
+}) {
   const [editorRef, setEditorRef] = useState<editor.IStandaloneCodeEditor>();
   const room = useRoom();
   const yProvider = getYjsProviderForRoom(room);
 
-  // Set up Liveblocks Yjs provider and attach Monaco editor
+  // Mount Monaco Binding
   useEffect(() => {
-    let binding: MonacoBinding;
+    let binding: MonacoBinding | undefined;
 
     if (editorRef) {
       const yDoc = yProvider.getYDoc();
       const yText = yDoc.getText(filename || "monaco");
 
-      // Attach Yjs to Monaco
       binding = new MonacoBinding(
         yText,
         editorRef.getModel() as editor.ITextModel,
@@ -35,7 +39,14 @@ export default function CollaborativeEditor({ filename }: { filename: string }) 
     return () => {
       binding?.destroy();
     };
-  }, [editorRef, room]);
+  }, [editorRef, room, filename]);
+
+  // Register code retriever
+  useEffect(() => {
+    if (editorRef) {
+      getCodeRef.current = () => editorRef.getValue();
+    }
+  }, [editorRef, getCodeRef]);
 
   const handleOnMount = useCallback((e: editor.IStandaloneCodeEditor) => {
     setEditorRef(e);
