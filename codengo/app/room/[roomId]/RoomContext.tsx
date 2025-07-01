@@ -1,7 +1,8 @@
 // RoomFileContext.tsx
 "use client";
 
-import { useStorage, useMutation, useSelf } from "@liveblocks/react";
+import { useStorage, useMutation, useSelf, useRoom } from "@liveblocks/react";
+import { getYjsProviderForRoom } from "@liveblocks/yjs";
 import React, { createContext, useContext, useState, ReactNode } from "react";
 import { LiveList } from "@liveblocks/core";
 
@@ -28,6 +29,7 @@ export const useRoomFiles = () => {
 export const RoomFileProvider = ({ children }: { children: React.ReactNode }) => {
   // const [files, setFiles] = useState<FileTab[]>([{ filename: "main.cpp" }]);
   const files = useStorage((root) => root.files as FileTab[] || []);
+  const room = useRoom();
 
 
   const [activeFile, setActiveFile] = useState(0);
@@ -62,6 +64,10 @@ export const RoomFileProvider = ({ children }: { children: React.ReactNode }) =>
     if (index !== -1) {
       list.delete(index);
     }
+    
+    const ydoc = getYjsProviderForRoom(room).getYDoc();
+    const yText = ydoc.getText(name);
+    yText.delete(0, yText.length);
   }, []);
 
 

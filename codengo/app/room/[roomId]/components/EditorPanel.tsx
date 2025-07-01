@@ -6,8 +6,9 @@ import CollaborativeEditor from "./editorComps/CollaborativeEditor"; // assumes 
 export default function EditorPanel() {
   const { files, activeFile, setActiveFile, addFile, deleteFile } = useRoomFiles();
   console.log("Active file index:", activeFile);
+  const currentFile = files[activeFile];
 
-  if (!activeFile) {
+  if (!currentFile) {
     return (
       <div className="flex-grow flex items-center justify-center text-gray-500">
         <p>Select a file to edit</p>
