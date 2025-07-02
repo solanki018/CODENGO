@@ -5,12 +5,12 @@ import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { roomId: string } }
+  { params }: { params: Promise<{ roomId: string }> }
 ) {
   try {
     await connectDB();
 
-    const { roomId } = params;
+    const { roomId } = await params;
 
     const room = await Room.findOne({ roomId });
     if (!room) {
