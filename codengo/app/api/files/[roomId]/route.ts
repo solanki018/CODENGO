@@ -3,15 +3,13 @@
 import { connectDB } from "@/app/dbconfig/dbconfig";
 import File from "@/app/models/fileModel";
 import { NextRequest, NextResponse } from "next/server";
-import type { PagesRouteHandlerContext } from "next/dist/server/route-modules/pages/module.compiled";
 
 
-type Props = {
-  params: Promise<{ roomId: string }>;
-};
-
-export async function GET(req: NextRequest, props: Props) {
-  const { roomId } = await props.params;
+export async function GET(
+  req: NextRequest,
+  { params }: { params: Promise<{ roomId: string }> }
+) : Promise<NextResponse>{
+  const { roomId } = await params;
   try {
     await connectDB();
 
