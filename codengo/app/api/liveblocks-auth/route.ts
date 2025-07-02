@@ -87,7 +87,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-export function generateUserColor(userId: string): string {
+function generateUserColor(userId: string): string {
   // DJB2 hash function — simple and effective
   let hash = 5381;
   for (let i = 0; i < userId.length; i++) {
