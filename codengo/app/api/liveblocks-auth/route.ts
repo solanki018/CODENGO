@@ -1,5 +1,7 @@
 import { Liveblocks } from "@liveblocks/node";
 import { NextRequest } from "next/server";
+import jwt from "jsonwebtoken";
+import User from "@/app/models/userModel";
 
 /**
  * Authenticating your Liveblocks application
@@ -42,13 +44,37 @@ export async function POST(request: NextRequest) {
 
     const user = await getUserFromToken(request); // 🔐 Replace with actual auth logic
 
+    const token = request.cookies.get("token")?.value;
+    if (!token) throw new Error("Not authenticated");
+
+    const decoded = jwt.verify(token, process.env.TOKEN_SECRET!) as {
+      id: string;
+      username: string;
+    };
+
+    if (!decoded || !decoded.id || !decoded.username) {
+      throw new Error("Invalid token");
+    }
+
+    console.log("Decoded JWT:", decoded);
+
     const session = liveblocks.prepareSession(user._id.toString(), {
       userInfo: {
-        name: user.firstName || user.username || "Anonymous",
+        name: decoded.username,
         picture: "", // optional
-        color: "#85BBF0", // optional
+        color: generateUserColor(decoded.id), // optional
       },
     });
+
+    console.log(generateUserColor(decoded.id));
+
+    // // console user
+    // console.log("Liveblocks Auth User:", {
+    //   id: user._id,
+    //   name: user.username || user.firstName || "Anonymous",
+    //   picture: "", // optional
+    //   color: "#85BBF0", // optional
+    // });
 
     // ✅ Grant access to the exact requested room
     session.allow(room, session.FULL_ACCESS);
@@ -60,6 +86,21 @@ export async function POST(request: NextRequest) {
     return new Response(JSON.stringify({ error: err.message }), { status: 401 });
   }
 }
+
+export function generateUserColor(userId: string): string {
+  // DJB2 hash function — simple and effective
+  let hash = 5381;
+  for (let i = 0; i < userId.length; i++) {
+    hash = (hash * 33) ^ userId.charCodeAt(i);
+  }
+
+  // Generate hue from 0 to 359
+  const hue = Math.abs(hash) % 360;
+
+  // Fixed saturation and lightness for decent readability
+  return `hsl(${hue}, 70%, 60%)`;
+}
+
 
 // Dummy implementation of getUserFromToken
 async function getUserFromToken(request: NextRequest): Promise<{

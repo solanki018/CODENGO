@@ -8,6 +8,8 @@ import { Editor } from "@monaco-editor/react";
 import { editor } from "monaco-editor";
 import { MonacoBinding } from "y-monaco";
 import { Awareness } from "y-protocols/awareness";
+import { Cursors } from "./Cursors";
+import styles from "./CollaborativeEditor.module.css";
 
 export default function CollaborativeEditor({
   filename,
@@ -53,7 +55,23 @@ export default function CollaborativeEditor({
   }, []);
 
   return (
-    <div className="flex-grow p-4 rounded-2xl bg-[#1a1a1a]">
+  <div className="flex flex-col h-full w-full relative bg-[#1a1a1a] rounded-2xl overflow-hidden">
+    {/* Cursor styles */}
+    {yProvider ? <Cursors yProvider={yProvider} /> : null}
+
+    {/* Editor header with avatars and optional toolbar */}
+    <div className="flex items-center justify-between px-4 py-2 border-b border-zinc-700 bg-[#222]">
+      <div className="text-sm text-white/70 font-medium">
+        {/* Optional: Room name or file name */}
+        {filename}
+      </div>
+
+      {/* Optional avatars if you want them */}
+      {/* <Avatars /> */}
+    </div>
+
+    {/* Monaco Editor */}
+    <div className="flex-grow">
       <Editor
         onMount={handleOnMount}
         height="100%"
@@ -61,8 +79,13 @@ export default function CollaborativeEditor({
         theme="vs-dark"
         defaultLanguage="typescript"
         defaultValue=""
-        options={{ tabSize: 2 }}
+        options={{
+          tabSize: 2,
+          padding: { top: 20 },
+          minimap: { enabled: false },
+        }}
       />
     </div>
+  </div>
   );
 }
