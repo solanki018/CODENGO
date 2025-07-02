@@ -3,18 +3,17 @@
 import { connectDB } from "@/app/dbconfig/dbconfig";
 import File from "@/app/models/fileModel";
 import { NextRequest, NextResponse } from "next/server";
+import type { PagesRouteHandlerContext } from "next/dist/server/route-modules/pages/module.compiled";
 
-type Context = {
-  params: {
-    roomId: string;
-  };
+
+type Props = {
+  params: Promise<{ roomId: string }>;
 };
 
-export async function GET(req: NextRequest, context: Context) {
+export async function GET(req: NextRequest, props: Props) {
+  const { roomId } = await props.params;
   try {
     await connectDB();
-
-    const { roomId } = context.params;
 
     const files = await File.find({ roomId }).select("filename content roomId createdAt");
 
