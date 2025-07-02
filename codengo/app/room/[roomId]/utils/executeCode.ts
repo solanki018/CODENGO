@@ -11,7 +11,7 @@ export function executeCpp(code: string): Promise<string> {
     fs.writeFileSync(filepath, code);
 
     const command = `docker run --rm -v /tmp:/code -w /code solanki018/cpp-runner sh -c "g++ ${filename} -o main && ./main"`;
-
+        
     exec(command, (error, stdout, stderr) => {
       fs.unlinkSync(filepath); // clean up
 

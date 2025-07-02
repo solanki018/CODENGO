@@ -1,7 +1,7 @@
 // lib/socket.ts
 import io from 'socket.io-client';
 
-const socket = io('http://localhost:3001', {
+const socket = io('https://codengo-1w21.onrender.com', {
   autoConnect: false,
 });
 

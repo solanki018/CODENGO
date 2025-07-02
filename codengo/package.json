@@ -5,8 +5,8 @@
   "main": "dist/server.js",
   "scripts": {
     "dev": "next dev",
-    "build": "tsc",
-    "start": "node dist/server.js"
+    "build": "next build",
+    "start": "next start"
   },
   "dependencies": {
     "@excalidraw/excalidraw": "^0.18.0",
