@@ -4,6 +4,12 @@ import { connectDB } from "@/app/dbconfig/dbconfig";
 import File from "@/app/models/fileModel";
 import { NextRequest, NextResponse } from "next/server";
 
+type Context = {
+  params: {
+    roomId: string;
+  };
+};
+
 export async function GET(
   req: NextRequest,
   { params }: { params: { roomId: string } }
