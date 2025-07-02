@@ -10,14 +10,11 @@ type Context = {
   };
 };
 
-export async function GET(
-  req: NextRequest,
-  { params }: { params: { roomId: string } }
-) {
+export async function GET(req: NextRequest, context: Context) {
   try {
     await connectDB();
 
-    const { roomId } = params;
+    const { roomId } = context.params;
 
     const files = await File.find({ roomId }).select("filename content roomId createdAt");
 
