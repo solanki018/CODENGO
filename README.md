@@ -42,14 +42,14 @@ cd backend
 npm install
 
 # Install dependencies for frontend
-cd ../frontend
+cd ../codengo
 npm install
 
 Running the Project
 # Start backend
-cd backend
+cd backend-socket
 npm start
 
 # Start frontend
-cd frontend
+cd codengo
 npm start
