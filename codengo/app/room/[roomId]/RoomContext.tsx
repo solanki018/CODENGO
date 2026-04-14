@@ -46,7 +46,7 @@ export const RoomFileProvider = ({ children }: { children: React.ReactNode }) =>
 
     if (!(list instanceof LiveList)) return;
 
-    const exists = list.toArray().some(
+    const exists = Array.from(list).some(
       (file) =>
         typeof file === "object" &&
         file !== null &&

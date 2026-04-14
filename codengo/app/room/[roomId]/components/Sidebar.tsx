@@ -71,7 +71,7 @@ export default function Sidebar() {
         ))}
       </div>
 
-      {/* Bottom Buttons */}
+      {/* Bottom Buttons
       <div className="space-y-3">
         <Link href="/room/excalidraw">
           <button className="w-full bg-white text-black py-2 rounded-md font-semibold hover:scale-105 transition">
@@ -88,7 +88,7 @@ export default function Sidebar() {
         >
           Project Name <FaDownload />
         </button>
-      </div>
+      </div> */}
     </aside>
   );
 }
